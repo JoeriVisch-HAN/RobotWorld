@@ -638,7 +638,7 @@ namespace Application
 	 */
 	void MainFrameWindow::OnStartRobot( wxCommandEvent& UNUSEDPARAM(anEvent))
 	{
-		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getRobot( "Robot");
+		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getRobot( "Henk");
 		if (robot && !robot->isActing())
 		{
 			robot->startActing();
@@ -649,7 +649,7 @@ namespace Application
 	 */
 	void MainFrameWindow::OnStopRobot( wxCommandEvent& UNUSEDPARAM(anEvent))
 	{
-		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getRobot( "Robot");
+		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getRobot( "Henk");
 		if (robot && robot->isActing())
 		{
 			robot->stopActing();
@@ -679,11 +679,20 @@ namespace Application
 			}
 			case 1:
 			{
+				Model::RobotWorld::getRobotWorld().newRobot("Henk", wxPoint(50,60),false);
+				Model::RobotWorld::getRobotWorld().newGoal("Goal", wxPoint(400, 400), false);
+				Model::RobotWorld::getRobotWorld().newWall(wxPoint(400, 200), wxPoint(400, 300), false);
+				robotWorldCanvas->populate( 4);
 				TRACE_DEVELOP("Please create your own student world 1");
 				break;
 			}
 			case 2:
 			{
+
+				Model::RobotWorld::getRobotWorld().newRobot("Henk", wxPoint(77,60),false);
+				Model::RobotWorld::getRobotWorld().newGoal("Goal", wxPoint(400, 400), false);
+				Model::RobotWorld::getRobotWorld().newWall(wxPoint(400, 200), wxPoint(400, 300), false);
+				robotWorldCanvas->populate();
 				TRACE_DEVELOP("Please create your own student world 2");
 				break;
 			}
@@ -708,7 +717,7 @@ namespace Application
 	 */
 	void MainFrameWindow::OnStartListening( wxCommandEvent& UNUSEDPARAM(anEvent))
 	{
-		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getRobot( "Robot");
+		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getRobot( "Henk");
 		if (robot)
 		{
 			robot->startCommunicating();
@@ -719,7 +728,7 @@ namespace Application
 	 */
 	void MainFrameWindow::OnSendMessage( wxCommandEvent& UNUSEDPARAM(anEvent))
 	{
-		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getRobot( "Robot");
+		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getRobot( "Henk");
 		if (robot)
 		{
 			std::string remoteIpAdres = "localhost";
