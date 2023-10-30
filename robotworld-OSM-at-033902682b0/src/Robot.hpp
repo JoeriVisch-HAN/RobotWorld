@@ -169,6 +169,8 @@ namespace Model
 			/**
 			 *
 			 */
+			bool andereRobotInDeBuurt() const;
+
 			bool intersects( const wxRegion& aRegion) const;
 			/**
 			 *
@@ -242,6 +244,15 @@ namespace Model
 			 * Returns a description of the object with all data of the object usable for debugging
 			 */
 			virtual std::string asDebugString() const override;
+			RobotPtr getAndereRobot() const;
+			void setAndereRobot(RobotPtr andereRobot);
+
+			GoalPtr getGoal() const;
+			void setGoal(GoalPtr goal);
+
+			bool isLokaal() const;
+			void setLokaal(bool lokaal);
+
 			//@}
 
 			/**
@@ -297,6 +308,10 @@ namespace Model
 			/**
 			 *
 			 */
+			RobotPtr andereRobot;
+			/**
+			 *
+			 */
 			PathAlgorithm::AStar astar;
 			/**
 			 *
@@ -314,6 +329,10 @@ namespace Model
 			 *
 			 */
 			bool communicating;
+			/**
+			 *
+			 */
+			bool lokaal;
 			/**
 			 *
 			 */
