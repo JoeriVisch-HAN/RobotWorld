@@ -170,10 +170,10 @@ namespace Model
 
 		if (this == RobotWorld::getRobotWorld().getLocalRobot().get())
 		{
-			calculateRoute( RobotWorld::getRobotWorld().getGoal("YourGoal") );
-		} else
+			calculateRoute(RobotWorld::getRobotWorld().getGoal("YourGoal"));
+		}else
 		{
-			calculateRoute( RobotWorld::getRobotWorld().getGoal("PeerGoal") );
+			calculateRoute(RobotWorld::getRobotWorld().getGoal("PeerGoal"));
 		}
 
 		drive();
@@ -393,7 +393,8 @@ namespace Model
 
 	void handlePopulateRequest(Messaging::Message& aMessage)
 	{
-		int worldSelection = static_cast<signed int>(std::stoi(aMessage.getBody()));
+		int worldSelection = static_cast<signed int>(std::stoi(
+		        aMessage.getBody()));
 		RobotWorld::getRobotWorld().populate(worldSelection, true);
 		TRACE_DEVELOP("Spawned world " + worldSelection);
 		aMessage.setMessageType(Messaging::PopulateResponse);
@@ -458,8 +459,8 @@ namespace Model
 			default:
 			{
 				TRACE_DEVELOP(
-				        __PRETTY_FUNCTION__
-				                + std::string(": default not implemented"));
+						__PRETTY_FUNCTION__
+						+ std::string(": default not implemented"));
 				break;
 			}
 		}
@@ -488,9 +489,9 @@ namespace Model
 			default:
 			{
 				TRACE_DEVELOP(
-				        __PRETTY_FUNCTION__
-				                + std::string(": default not implemented, ")
-				                + aMessage.asString());
+						__PRETTY_FUNCTION__
+						+ std::string(": default not implemented, ")
+						+ aMessage.asString());
 				break;
 			}
 		}
@@ -548,7 +549,7 @@ namespace Model
 				{
 					// Do the update
 					const PathAlgorithm::Vertex& vertex = path[pathPoint +=
-							static_cast<unsigned int>(speed)];
+					        static_cast<unsigned int>(speed)];
 					front = BoundedVector(vertex.asPoint(), position);
 					position.x = vertex.x;
 					position.y = vertex.y;
@@ -619,23 +620,20 @@ namespace Model
 		return false;
 	}
 
-	bool Robot::andereRobotInDeBuurt() const {
-		RobotPtr andereRobot;
-		if (this == RobotWorld::getRobotWorld().getLocalRobot().get())
-		{
-			andereRobot = RobotWorld::getRobotWorld().getRobot("Peer");
-		} else
-		{
-			andereRobot = RobotWorld::getRobotWorld().getLocalRobot();
-		}
+	bool Robot::andereRobotInDeBuurt() const
+	{
+		RobotPtr andereRobot =
+		        this == RobotWorld::getRobotWorld().getLocalRobot().get() ?
+		                RobotWorld::getRobotWorld().getRobot("Peer") :
+		                RobotWorld::getRobotWorld().getLocalRobot();
 		int yAnder = andereRobot->position.y;
 		int xAnder = andereRobot->position.x;
 		int xThis = position.x;
 		int yThis = position.y;
 		int ratio = 50;
 
-		return (xAnder >= xThis - ratio &&	xAnder <= xThis + ratio) ||
-			   (yAnder >= yThis - ratio &&	yAnder <= yThis + ratio);
+		return (xAnder >= xThis - ratio && xAnder <= xThis + ratio)
+		        || (yAnder >= yThis - ratio && yAnder <= yThis + ratio);
 	}
 
 	/**
