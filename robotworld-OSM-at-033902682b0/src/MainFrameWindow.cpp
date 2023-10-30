@@ -23,6 +23,24 @@
 #include <array>
 #include <iostream>
 
+/**
+ * This handler calls the supplied lambda function when the handleResponse function is called
+ */
+template< typename T >
+struct CallbackResponseHandler : public Messaging::ResponseHandler
+{
+	explicit CallbackResponseHandler(T aT) : t(aT){}
+	/**
+	 * @see Messaging::ResponseHandler::handleResponse( const Message& aMessage)
+	 */
+	virtual void handleResponse( const Messaging::Message& aMessage)
+	{
+		FUNCTRACE_TEXT_DEVELOP(aMessage.asString());
+		t(aMessage);
+	}
+	T t;
+}; // struct CallbackResponseHandler
+
 namespace Application
 {
 	/**
@@ -511,6 +529,8 @@ namespace Application
 
 		return panel;
 	}
+
+
 	/**
 	 *
 	 */
@@ -638,83 +658,46 @@ namespace Application
 	 */
 	void MainFrameWindow::OnStartRobot( wxCommandEvent& UNUSEDPARAM(anEvent))
 	{
-//		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getRobot( "Henk");
-		for(Model::RobotPtr r : Model::RobotWorld::getRobotWorld().getRobots()){
-			if(r && !r->isActing()){
-				r->startActing();
-			}
+		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getLocalRobot();
+		if (robot && !robot->isActing())
+		{
+			robot->startActing();
+			TRACE_DEVELOP("Started Local Robot");
+			robot->sendMessage( Messaging::Message( Messaging::StartRequest ));
 		}
-//		if (robot && !robot->isActing())
-//		{
-//			robot->startActing();
-//		}
 	}
 	/**
 	 *
 	 */
 	void MainFrameWindow::OnStopRobot( wxCommandEvent& UNUSEDPARAM(anEvent))
 	{
-//		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getRobot( "Henk");
-		for(Model::RobotPtr r : Model::RobotWorld::getRobotWorld().getRobots()){
-			if (r && r->isActing())
-			{
-				r->stopActing();
-			}
+		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getLocalRobot();
+		if (robot && robot->isActing())
+		{
+			robot->stopActing();
+			TRACE_DEVELOP("Stopped Local Robot");
+			robot->sendMessage( Messaging::Message( Messaging::StopRequest ));
 		}
 	}
 	/**
 	 *
 	 */
+
+	/**
+	 * This is the callback function that is used by the CallbackResponseHandler
+	 */
+	void HandleResponse( const Messaging::Message& aMessage)
+	{
+		FUNCTRACE_TEXT_DEVELOP(aMessage.asString());
+	}
+
 	void MainFrameWindow::OnPopulate( wxCommandEvent& UNUSEDPARAM(anEvent))
 	{
-		switch(worldNumber->GetSelection())
-		{
-			case 0:
-			{
-				robotWorldCanvas->populate( 4);
-				// TODO Do something...
-//				std::shared_ptr<View::RobotShape> robotShape = std::dynamic_pointer_cast<View::RobotShape>(robotWorldCanvas->getSelectedShape());
-//				if(robotShape)
-//				{
-//					TRACE_DEVELOP("It should be checked...");
-//					drawOpenSetCheckbox->SetValue(robotShape->getDrawOpenSet());
-//				}else
-//				{
-//					TRACE_DEVELOP("No robotShape? It is not checked...");
-//				}
-				break;
-			}
-			case 1:
-			{
-				Model::RobotWorld::getRobotWorld().newRobot("Henk", wxPoint(50,60),false);
-				Model::RobotWorld::getRobotWorld().newRobot("Piet", wxPoint(450, 450), false);
-				Model::RobotWorld::getRobotWorld().newGoal("Goal2", wxPoint(50, 60), false);
-				Model::RobotWorld::getRobotWorld().newGoal("ho", wxPoint(450, 440), false);
-
-				Model::RobotWorld::getRobotWorld().getRobot("Henk")->setGoal(Model::RobotWorld::getRobotWorld().getGoal("ho"));
-				Model::RobotWorld::getRobotWorld().getRobot("Piet")->setGoal(Model::RobotWorld::getRobotWorld().getGoal("Goal2"));
-				Model::RobotWorld::getRobotWorld().getRobot("Henk")->setAndereRobot(Model::RobotWorld::getRobotWorld().getRobot("Piet"));
-				Model::RobotWorld::getRobotWorld().getRobot("Piet")->setAndereRobot(Model::RobotWorld::getRobotWorld().getRobot("Henk"));
-//				Model::RobotWorld::getRobotWorld().newWall(wxPoint(400, 200), wxPoint(250, 480), false);
-				robotWorldCanvas->populate();
-				TRACE_DEVELOP("student world 1 is created");
-				break;
-			}
-			case 2:
-			{
-				Model::RobotWorld::getRobotWorld().newRobot("Henk2", wxPoint(120,60),false);
-				Model::RobotWorld::getRobotWorld().newGoal("Goal", wxPoint(450, 400), false);
-				Model::RobotWorld::getRobotWorld().newWall(wxPoint(200, 300), wxPoint(290, 300), false);
-				robotWorldCanvas->populate();
-				TRACE_DEVELOP("student world 2 is created");
-				break;
-			}
-			default:
-			{
-				TRACE_DEVELOP("Huh?");
-				break;
-			}
-		}
+		int worldSelection = worldNumber->GetSelection();
+		robotWorldCanvas->populate(worldSelection, false);
+		TRACE_DEVELOP("Spawned world " + worldSelection);
+		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getLocalRobot();
+		robot->sendMessage( Messaging::Message( Messaging::PopulateRequest, std::to_string(worldSelection)) );
 	}
 	/**
 	 *
@@ -730,14 +713,13 @@ namespace Application
 	 */
 	void MainFrameWindow::OnStartListening( wxCommandEvent& UNUSEDPARAM(anEvent))
 	{
-//		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getRobot( "Henk");
-//		if (robot)
-//		{
-//			robot->startCommunicating();
-//		}
-
-		for(Model::RobotPtr r : Model::RobotWorld::getRobotWorld().getRobots()){
-			r->startCommunicating();
+		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getLocalRobot();
+		if (robot)
+		{
+			robot->startCommunicating();
+		} else
+		{
+			TRACE_DEVELOP("No robot found! Unable to start server.");
 		}
 	}
 	/**
@@ -745,39 +727,27 @@ namespace Application
 	 */
 	void MainFrameWindow::OnSendMessage( wxCommandEvent& UNUSEDPARAM(anEvent))
 	{
-		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getRobot( "Henk");
-//		if (robot)
-//		{
-			std::string remoteIpAdres = "localhost";
-			std::string remotePort = "12345";
-
-			if (MainApplication::isArgGiven( "-remote_ip"))
-			{
-				remoteIpAdres = MainApplication::getArg( "-remote_ip").value;
-			}
-			if (MainApplication::isArgGiven( "-remote_port"))
-			{
-				remotePort = MainApplication::getArg( "-remote_port").value;
-			}
-
-			// We will request an echo message. The response will be "Hello World", if all goes OK,
-			// "Goodbye cruel world!" if something went wrong.
-			Messaging::Client c1ient( remoteIpAdres,
-									  static_cast<unsigned short>(std::stoi(remotePort)),
-									  robot);
-			Messaging::Message message( Messaging::EchoRequest, "Hello world!");
-			c1ient.dispatchMessage( message);
-		//}
+		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getLocalRobot();
+		robot->sendMessage( Messaging::Message( Messaging::EchoRequest, "Hello world!") );
 	}
 	/**
 	 *
 	 */
 	void MainFrameWindow::OnStopListening( wxCommandEvent& UNUSEDPARAM(anEvent))
 	{
-		for(Model::RobotPtr r : Model::RobotWorld::getRobotWorld().getRobots()){
-			r->stopCommunicating();
+		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getLocalRobot();
+		if (robot)
+		{
+			robot->stopCommunicating();
 		}
 	}
+
+	void MainFrameWindow::sendMessage(const Messaging::Message& message)
+	{
+		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getLocalRobot();
+		robot->sendMessage( message );
+	}
+
 	/**
 	 *
 	 */
