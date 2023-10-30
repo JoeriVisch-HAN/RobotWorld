@@ -638,21 +638,28 @@ namespace Application
 	 */
 	void MainFrameWindow::OnStartRobot( wxCommandEvent& UNUSEDPARAM(anEvent))
 	{
-		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getRobot( "Henk");
-		if (robot && !robot->isActing())
-		{
-			robot->startActing();
+//		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getRobot( "Henk");
+		for(Model::RobotPtr r : Model::RobotWorld::getRobotWorld().getRobots()){
+			if(r && !r->isActing()){
+				r->startActing();
+			}
 		}
+//		if (robot && !robot->isActing())
+//		{
+//			robot->startActing();
+//		}
 	}
 	/**
 	 *
 	 */
 	void MainFrameWindow::OnStopRobot( wxCommandEvent& UNUSEDPARAM(anEvent))
 	{
-		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getRobot( "Henk");
-		if (robot && robot->isActing())
-		{
-			robot->stopActing();
+//		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getRobot( "Henk");
+		for(Model::RobotPtr r : Model::RobotWorld::getRobotWorld().getRobots()){
+			if (r && r->isActing())
+			{
+				r->stopActing();
+			}
 		}
 	}
 	/**
@@ -680,20 +687,26 @@ namespace Application
 			case 1:
 			{
 				Model::RobotWorld::getRobotWorld().newRobot("Henk", wxPoint(50,60),false);
-				Model::RobotWorld::getRobotWorld().newGoal("Goal", wxPoint(400, 400), false);
-				Model::RobotWorld::getRobotWorld().newWall(wxPoint(400, 200), wxPoint(400, 300), false);
-				robotWorldCanvas->populate( 4);
-				TRACE_DEVELOP("Please create your own student world 1");
+				Model::RobotWorld::getRobotWorld().newRobot("Piet", wxPoint(450, 450), false);
+				Model::RobotWorld::getRobotWorld().newGoal("Goal2", wxPoint(50, 60), false);
+				Model::RobotWorld::getRobotWorld().newGoal("ho", wxPoint(450, 440), false);
+
+				Model::RobotWorld::getRobotWorld().getRobot("Henk")->setGoal(Model::RobotWorld::getRobotWorld().getGoal("ho"));
+				Model::RobotWorld::getRobotWorld().getRobot("Piet")->setGoal(Model::RobotWorld::getRobotWorld().getGoal("Goal2"));
+				Model::RobotWorld::getRobotWorld().getRobot("Henk")->setAndereRobot(Model::RobotWorld::getRobotWorld().getRobot("Piet"));
+				Model::RobotWorld::getRobotWorld().getRobot("Piet")->setAndereRobot(Model::RobotWorld::getRobotWorld().getRobot("Henk"));
+//				Model::RobotWorld::getRobotWorld().newWall(wxPoint(400, 200), wxPoint(250, 480), false);
+				robotWorldCanvas->populate();
+				TRACE_DEVELOP("student world 1 is created");
 				break;
 			}
 			case 2:
 			{
-
-				Model::RobotWorld::getRobotWorld().newRobot("Henk", wxPoint(77,60),false);
-				Model::RobotWorld::getRobotWorld().newGoal("Goal", wxPoint(400, 400), false);
-				Model::RobotWorld::getRobotWorld().newWall(wxPoint(400, 200), wxPoint(400, 300), false);
+				Model::RobotWorld::getRobotWorld().newRobot("Henk2", wxPoint(120,60),false);
+				Model::RobotWorld::getRobotWorld().newGoal("Goal", wxPoint(450, 400), false);
+				Model::RobotWorld::getRobotWorld().newWall(wxPoint(200, 300), wxPoint(290, 300), false);
 				robotWorldCanvas->populate();
-				TRACE_DEVELOP("Please create your own student world 2");
+				TRACE_DEVELOP("student world 2 is created");
 				break;
 			}
 			default:
@@ -717,10 +730,14 @@ namespace Application
 	 */
 	void MainFrameWindow::OnStartListening( wxCommandEvent& UNUSEDPARAM(anEvent))
 	{
-		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getRobot( "Henk");
-		if (robot)
-		{
-			robot->startCommunicating();
+//		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getRobot( "Henk");
+//		if (robot)
+//		{
+//			robot->startCommunicating();
+//		}
+
+		for(Model::RobotPtr r : Model::RobotWorld::getRobotWorld().getRobots()){
+			r->startCommunicating();
 		}
 	}
 	/**
@@ -729,8 +746,8 @@ namespace Application
 	void MainFrameWindow::OnSendMessage( wxCommandEvent& UNUSEDPARAM(anEvent))
 	{
 		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getRobot( "Henk");
-		if (robot)
-		{
+//		if (robot)
+//		{
 			std::string remoteIpAdres = "localhost";
 			std::string remotePort = "12345";
 
@@ -750,17 +767,15 @@ namespace Application
 									  robot);
 			Messaging::Message message( Messaging::EchoRequest, "Hello world!");
 			c1ient.dispatchMessage( message);
-		}
+		//}
 	}
 	/**
 	 *
 	 */
 	void MainFrameWindow::OnStopListening( wxCommandEvent& UNUSEDPARAM(anEvent))
 	{
-		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getRobot( "Robot");
-		if (robot)
-		{
-			robot->stopCommunicating();
+		for(Model::RobotPtr r : Model::RobotWorld::getRobotWorld().getRobots()){
+			r->stopCommunicating();
 		}
 	}
 	/**

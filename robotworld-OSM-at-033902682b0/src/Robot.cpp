@@ -45,10 +45,14 @@ namespace Model
 								speed( 0.0),
 								acting(false),
 								driving(false),
-								communicating(false)
+								communicating(false),
+								lokaal(false)
+
 	{
 		// We use the real position for starters, not an estimated position.
 		startPosition = position;
+		andereRobot = nullptr;
+		goal = nullptr;
 	}
 	/**
 	 *
@@ -172,12 +176,16 @@ namespace Model
 	 */
 	void Robot::startDriving()
 	{
-		driving = true;
 
-		goal = RobotWorld::getRobotWorld().getGoal( "Goal");
-		calculateRoute(goal);
+			driving = true;
 
-		drive();
+			if(goal == nullptr){
+				goal = RobotWorld::getRobotWorld().getGoal( "Goal");
+			}
+			calculateRoute(goal);
+
+			drive();
+
 	}
 	/**
 	 *
@@ -439,11 +447,15 @@ namespace Model
 			while (position.x > 0 && position.x < 500 && position.y > 0 && position.y < 500 && pathPoint < path.size()) // @suppress("Avoid magic numbers")
 			{
 				// Do the update
-				const PathAlgorithm::Vertex& vertex = path[pathPoint+=static_cast<unsigned int>(speed)];
-				front = BoundedVector( vertex.asPoint(), position);
-				position.x = vertex.x;
-				position.y = vertex.y;
 
+				if(!andereRobotInDeBuurt()){
+					const PathAlgorithm::Vertex& vertex = path[pathPoint+=static_cast<unsigned int>(speed)];
+					front = BoundedVector( vertex.asPoint(), position);
+					position.x = vertex.x;
+					position.y = vertex.y;
+					Application::Logger::log(asString());
+
+				}
 				// Stop on arrival or collision
 				if (arrived(goal) || collision())
 				{
@@ -498,12 +510,39 @@ namespace Model
 	 */
 	bool Robot::arrived(GoalPtr aGoal)
 	{
-		if (aGoal && intersects( aGoal->getRegion()))
-		{
-			return true;
-		}
-		return false;
+			return aGoal && intersects( aGoal->getRegion());
 	}
+
+	bool Robot::andereRobotInDeBuurt() const {
+		if(andereRobot == nullptr){
+			return false;
+		}
+		int yAnder = andereRobot->position.y;
+		int xAnder = andereRobot->position.x;
+		int xThis = position.x;
+		int yThis = position.y;
+		int ratio = 50;
+
+		return (xAnder >= xThis - ratio &&	xAnder <= xThis + ratio) ||
+			   (yAnder >= yThis - ratio &&	yAnder <= yThis + ratio);
+	}
+
+	GoalPtr Robot::getGoal() const {
+		return goal;
+	}
+
+	void Robot::setGoal(GoalPtr aGoal) {
+		goal = aGoal;
+	}
+
+	bool Robot::isLokaal() const {
+		return lokaal;
+	}
+
+	void Robot::setLokaal(bool lokaal) {
+		this->lokaal = lokaal;
+	}
+
 	/**
 	 *
 	 */
@@ -537,6 +576,18 @@ namespace Model
 			}
 		}
 		return false;
+	}
+
+	RobotPtr Robot::getAndereRobot() const {
+		return andereRobot;
+	}
+	/**
+	 *
+	 */
+	void Robot::setAndereRobot(RobotPtr aAndereRobot) {
+		andereRobot = aAndereRobot;
+
+		Application::Logger::log(andereRobot->asString());
 	}
 
 } // namespace Model
