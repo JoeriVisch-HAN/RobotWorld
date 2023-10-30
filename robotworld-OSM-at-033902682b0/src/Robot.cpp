@@ -620,7 +620,14 @@ namespace Model
 	}
 
 	bool Robot::andereRobotInDeBuurt() const {
-		RobotPtr andereRobot = RobotWorld::getRobotWorld().getRobot("Peer");
+		RobotPtr andereRobot;
+		if (this == RobotWorld::getRobotWorld().getLocalRobot().get())
+		{
+			andereRobot = RobotWorld::getRobotWorld().getRobot("Peer");
+		} else
+		{
+			andereRobot = RobotWorld::getRobotWorld().getLocalRobot();
+		}
 		int yAnder = andereRobot->position.y;
 		int xAnder = andereRobot->position.x;
 		int xThis = position.x;
