@@ -293,39 +293,27 @@ namespace Model
 	{
 		return walls;
 	}
-
+	/**
+	 *
+	 */
 	void populateWorld0(bool fromRequest)
 	{
 		RobotWorld& robotWorld = RobotWorld::getRobotWorld();
-		if (fromRequest)
-		{
-			robotWorld.newRobot("Peer", wxPoint(163, 111), false);
-			robotWorld.newGoal("PeerGoal", wxPoint(320, 285), false);
-		} else
-		{
-			Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getLocalRobot();
-			robot->setPosition(wxPoint(163, 111), false);
-			robotWorld.newGoal("YourGoal", wxPoint(320, 285), false);
-		}
-		RobotWorld::getRobotWorld().newWall(wxPoint(7, 234), wxPoint(419, 234), false);
+				if (fromRequest)
+				{
+					robotWorld.newRobot("Peer", wxPoint(50, 60), false);
+					robotWorld.newGoal("PeerGoal", wxPoint(450, 440), false);
+				} else
+				{
+					Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getLocalRobot();
+					robot->setPosition(wxPoint(50, 60), false);
+					robotWorld.newGoal("YourGoal", wxPoint(450, 440), false);
+				}
 	}
-
+	/**
+	 *
+	 */
 	void populateWorld1(bool fromRequest)
-	{
-		RobotWorld& robotWorld = RobotWorld::getRobotWorld();
-		if (fromRequest)
-		{
-			robotWorld.newRobot("Peer", wxPoint(50, 75), false);
-			robotWorld.newGoal("PeerGoal", wxPoint(450, 475), false);
-		} else
-		{
-			Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getLocalRobot();
-			robot->setPosition(wxPoint(50, 75), false);
-			robotWorld.newGoal("YourGoal", wxPoint(450, 475), false);
-		}
-	}
-
-	void populateWorld2(bool fromRequest)
 	{
 		RobotWorld& robotWorld = RobotWorld::getRobotWorld();
 		if (fromRequest)
@@ -339,7 +327,66 @@ namespace Model
 			robotWorld.newGoal("YourGoal", wxPoint(50, 50), false);
 		}
 	}
+	/**
+	 *
+	 */
+	void populateWorld2(bool fromRequest)
+	{
+		RobotWorld& robotWorld = RobotWorld::getRobotWorld();
+		if (fromRequest)
+		{
+			robotWorld.newRobot("Peer", wxPoint(40, 40), false);
+			robotWorld.newGoal("PeerGoal", wxPoint(480, 480), false);
+		} else
+		{
+			Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getLocalRobot();
+			robot->setPosition(wxPoint(20, 20), false);
+			robotWorld.newGoal("YourGoal", wxPoint(480, 480), false);
+		}
+	}
+	/**
+	 *
+	 */
+	void populateWorld3(bool fromRequest)
+		{
+			RobotWorld& robotWorld = RobotWorld::getRobotWorld();
+			if (fromRequest)
+			{
+				robotWorld.newRobot("Peer", wxPoint(480, 40), false);
+				robotWorld.newGoal("PeerGoal", wxPoint(40, 480), false);
+			} else
+			{
+				Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getLocalRobot();
+				robot->setPosition(wxPoint(480, 40), false);
+				robotWorld.newGoal("YourGoal", wxPoint(40, 480), false);
+			}
+		}
 
+	void wallAroundTheWorld()
+	{
+		RobotWorld::getRobotWorld().newWall(wxPoint(0,0), wxPoint(0,500), false);
+		RobotWorld::getRobotWorld().newWall(wxPoint(0,0), wxPoint(500,0), false);
+		RobotWorld::getRobotWorld().newWall(wxPoint(500,0), wxPoint(500,500), false);
+		RobotWorld::getRobotWorld().newWall(wxPoint(0,500), wxPoint(500,500), false);
+	}
+
+	/**
+	 *
+	 */
+	void populateWorld4(bool fromRequest)
+		{
+			populateWorld0(fromRequest);
+			wallAroundTheWorld();
+			RobotWorld::getRobotWorld().newWall(wxPoint(480, 300), wxPoint(150, 300), false);
+		}
+	/**
+	 *
+	 */
+	void populateWorld5(bool fromRequest)
+		{
+			populateWorld1(fromRequest);
+			RobotWorld::getRobotWorld().newWall(wxPoint(20, 100), wxPoint(350, 100), false);
+		}
 	/**
 	 *
 	 */
@@ -365,6 +412,22 @@ namespace Model
 				break;
 			}
 
+			case 3:
+			{
+				populateWorld3(fromRequest);
+				break;
+			}
+
+			case 4:
+			{
+				populateWorld4(fromRequest);
+				break;
+			}
+			case 5:
+			{
+				populateWorld5(fromRequest);
+				break;
+			}
 			default:
 			{
 				break;

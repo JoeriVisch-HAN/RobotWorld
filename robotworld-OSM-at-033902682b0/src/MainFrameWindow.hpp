@@ -87,7 +87,6 @@ namespace Application
 			wxRadioBox* logDestination;
 
 			wxPanel* configPanel;
-			wxCheckBox* drawOpenSetCheckbox;
 			wxSpinCtrl* speedSpinCtrl;
 			wxRadioBox* worldNumber;
 
@@ -101,11 +100,13 @@ namespace Application
 			void OnFileTraceFunction( wxCommandEvent& anEvent);
 			void OnAbout( wxCommandEvent& anEvent);
 
-			void OnDrawOpenSet( wxCommandEvent& anEvent);
 			void OnSpeedSpinCtrlUpdate( wxCommandEvent& anEvent);
 			void OnWorld1( wxCommandEvent& anEvent);
 			void OnWorld2( wxCommandEvent& anEvent);
 			void OnWorld3( wxCommandEvent& anEvent);
+			void OnWorld4( wxCommandEvent& anEvent);
+			void OnWorld5( wxCommandEvent& anEvent);
+			void OnWorld6( wxCommandEvent& anEvent);
 
 			void OnStartRobot( wxCommandEvent& anEvent);
 			void OnStopRobot( wxCommandEvent& anEvent);

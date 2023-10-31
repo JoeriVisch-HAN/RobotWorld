@@ -70,7 +70,7 @@ namespace PathAlgorithm
 			Vertex vertex( aVertex.x + xOffset[i], aVertex.y + yOffset[i]);
 			for (Model::WallPtr wall : walls)
 			{
-				if (Utils::Shape2DUtils::isOnLine( wall->getPoint1(), wall->getPoint2(), vertex.asPoint(), aFreeRadius))
+				if (Utils::Shape2DUtils::isOnLine( wall->getPoint1(), wall->getPoint2(), vertex.asPoint(), static_cast<int>(aFreeRadius * 1.25)))
 				{
 					addToNeigbours = false;
 					break;
@@ -89,11 +89,10 @@ namespace PathAlgorithm
 				if (Utils::Shape2DUtils::isOnLine(
 						andereRobot->getPosition(),
 						andereRobot->getPosition() + wxPoint(1, 1),
-					vertex.asPoint(), aFreeRadius + std::max(aRobotSize.GetWidth(), aRobotSize.GetHeight()) * 1.33
+					vertex.asPoint(), aFreeRadius + static_cast<unsigned int>(std::max(aRobotSize.GetWidth(), aRobotSize.GetHeight()) * 1.33)
 				))
 				{
 					addToNeigbours = false;
-					break;
 				}
 			}
 			if (addToNeigbours == true)
