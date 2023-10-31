@@ -682,13 +682,16 @@ namespace Application
 	 */
 	void MainFrameWindow::OnStartRobot( wxCommandEvent& UNUSEDPARAM(anEvent))
 	{
-		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getLocalRobot();
-		if (robot && !robot->isActing())
+		for (Model::RobotPtr robot : Model::RobotWorld::getRobotWorld().getRobots())
 		{
-			robot->startActing();
-			TRACE_DEVELOP("Started Local Robot");
-			robot->sendMessage( Messaging::Message( Messaging::StartRequest ));
+			if (!robot->isActing())
+			{
+				robot->startActing();
+			}
 		}
+		TRACE_DEVELOP("Started Robots");
+		Model::RobotPtr localRobot = Model::RobotWorld::getRobotWorld().getLocalRobot();
+		localRobot->sendMessage( Messaging::Message( Messaging::StartRequest ));
 	}
 	/**
 	 *

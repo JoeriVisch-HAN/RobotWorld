@@ -190,6 +190,11 @@ namespace Model
 		}
 		return nullptr;
 	}
+
+	RobotPtr RobotWorld::getRobot(int index) const
+	{
+		return robots.at(index);
+	}
 	/**
 	 *
 	 */
@@ -314,12 +319,12 @@ namespace Model
 		if (fromRequest)
 		{
 			robotWorld.newRobot("Peer", wxPoint(450, 450), false);
-			robotWorld.newGoal("PeerGoal", wxPoint(50, 60), false);
+			robotWorld.newGoal("PeerGoal", wxPoint(50, 50), false);
 		} else
 		{
 			Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getLocalRobot();
 			robot->setPosition(wxPoint(450, 450), false);
-			robotWorld.newGoal("YourGoal", wxPoint(50, 60), false);
+			robotWorld.newGoal("YourGoal", wxPoint(50, 50), false);
 		}
 	}
 	/**
@@ -426,7 +431,7 @@ namespace Model
 	 */
 	void RobotWorld::unpopulate(bool aNotifyObservers /*= true*/)
 	{
-		localRobot = nullptr;
+		localRobot->setPosition(wxPoint(-1, -1), aNotifyObservers);
 		robots.clear();
 		wayPoints.clear();
 		goals.clear();
@@ -571,6 +576,11 @@ namespace Model
 			localRobot = newRobot("You", wxPoint(-100,-100), false);
 		}
 		return localRobot;
+	}
+
+	void RobotWorld::reverseRobotVector()
+	{
+		std::reverse(robots.begin(), robots.end());
 	}
 
 	/**

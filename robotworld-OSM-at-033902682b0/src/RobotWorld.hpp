@@ -87,6 +87,8 @@ namespace Model
 			 *
 			 */
 			RobotPtr getRobot( const Base::ObjectId& anObjectId) const;
+
+			RobotPtr getRobot(int index) const;
 			/**
 			 *
 			 */
@@ -157,6 +159,8 @@ namespace Model
 			//@}
 
 			RobotPtr getLocalRobot();
+
+			void reverseRobotVector();
 
 		protected:
 			/**

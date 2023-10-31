@@ -262,7 +262,7 @@ namespace Model
 			/**
 			 *
 			 */
-			void calculateRoute( GoalPtr aGoal);
+			void calculateRoute( GoalPtr aGoal, bool ignoreRobot);
 			/**
 			 *
 			 */
@@ -328,6 +328,9 @@ namespace Model
 			 *
 			 */
 			Messaging::ServerPtr server;
+
+			unsigned int pathPoint;
+			bool alreadyCollided;
 	};
 } // namespace Model
 #endif // ROBOT_HPP_
