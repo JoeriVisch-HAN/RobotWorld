@@ -38,7 +38,7 @@ namespace Model
 	 */
 	Robot::Robot(const std::string& aName, const wxPoint& aPosition) : name(
 	        aName), size(wxDefaultSize), position(aPosition), front(0, 0), speed(
-	        0.0), acting(false), driving(false), communicating(false)
+	        0.0), acting(false), driving(false), communicating(false), pathPoint(0), alreadyCollided(false)
 	{
 		// We use the real position for starters, not an estimated position.
 		startPosition = position;
@@ -170,11 +170,12 @@ namespace Model
 
 		if (this == RobotWorld::getRobotWorld().getLocalRobot().get())
 		{
-			calculateRoute(RobotWorld::getRobotWorld().getGoal("YourGoal"));
-		}else
+			goal = RobotWorld::getRobotWorld().getGoal("YourGoal");
+		} else
 		{
-			calculateRoute(RobotWorld::getRobotWorld().getGoal("PeerGoal"));
+			goal = RobotWorld::getRobotWorld().getGoal("PeerGoal");
 		}
+		calculateRoute(goal, true);
 
 		drive();
 	}
@@ -403,12 +404,15 @@ namespace Model
 
 	void handleStartRequest(Messaging::Message& aMessage)
 	{
-		RobotPtr robot = RobotWorld::getRobotWorld().getRobot("Peer");
-		if (robot && !robot->isActing())
+		Model::RobotWorld::getRobotWorld().reverseRobotVector();
+		for (Model::RobotPtr robot : Model::RobotWorld::getRobotWorld().getRobots())
 		{
-			robot->startActing();
-			TRACE_DEVELOP("Started Peer Robot");
+			if (!robot->isActing())
+			{
+				robot->startActing();
+			}
 		}
+		TRACE_DEVELOP("Started Robots");
 		aMessage.setMessageType(Messaging::StartResponse);
 		aMessage.setBody("Messaging::StartResponse");
 	}
@@ -521,6 +525,7 @@ namespace Model
 
 		return os.str();
 	}
+
 	/**
 	 *
 	 */
@@ -529,30 +534,38 @@ namespace Model
 		try
 		{
 			// The runtime value always wins!!
-			speed =
-			        static_cast<float>(Application::MainApplication::getSettings().getSpeed());
+			speed = static_cast<float>(Application::MainApplication::getSettings().getSpeed()) / 2.5f;
 
 			// Compare a float/double with another float/double: use epsilon...
 			if (std::fabs(speed - 0.0) <= std::numeric_limits<float>::epsilon())
 			{
-				setSpeed(10.0, false);    // @suppress("Avoid magic numbers")
+				setSpeed(2, false);    // @suppress("Avoid magic numbers")
 			}
 
 			// We use the real position for starters, not an estimated position.
 			startPosition = position;
 
-			unsigned pathPoint = 0;
+			alreadyCollided = false;
+			pathPoint = 0;
 			while (position.x > 0 && position.x < 500 && position.y > 0
 			        && position.y < 500 && pathPoint < path.size())    // @suppress("Avoid magic numbers")
 			{
-				if (!andereRobotInDeBuurt())
+				// Do the update
+				const PathAlgorithm::Vertex& vertex = path[pathPoint +=
+						static_cast<unsigned int>(speed)];
+				front = BoundedVector(vertex.asPoint(), position);
+				position.x = vertex.x;
+				position.y = vertex.y;
+				if (andereRobotInDeBuurt() && this == RobotWorld::getRobotWorld().getRobot(0).get() && !alreadyCollided)
 				{
-					// Do the update
-					const PathAlgorithm::Vertex& vertex = path[pathPoint +=
-					        static_cast<unsigned int>(speed)];
-					front = BoundedVector(vertex.asPoint(), position);
-					position.x = vertex.x;
-					position.y = vertex.y;
+					for (RobotPtr robot : RobotWorld::getRobotWorld().getRobots())
+					{
+						robot->calculateRoute(robot->goal, false);
+						robot->pathPoint = 10;
+						robot->alreadyCollided = true;
+					}
+
+					TRACE_DEVELOP("Recalculating route (new size: " + std::to_string(path.size()) + ")");
 				}
 
 				// Stop on arrival or collision
@@ -568,7 +581,7 @@ namespace Model
 				notifyObservers();
 
 				// If there is no sleep_for here the robot will immediately be on its destination....
-				std::this_thread::sleep_for(std::chrono::milliseconds(100));    // @suppress("Avoid magic numbers")
+				std::this_thread::sleep_for(std::chrono::milliseconds(200));    // @suppress("Avoid magic numbers")
 
 				// this should be the last thing in the loop
 				if (driving == false)
@@ -592,7 +605,7 @@ namespace Model
 	/**
 	 *
 	 */
-	void Robot::calculateRoute(GoalPtr aGoal)
+	void Robot::calculateRoute(GoalPtr aGoal, bool ignoreRobot)
 	{
 		path.clear();
 		if (aGoal)
@@ -602,7 +615,10 @@ namespace Model
 
 			front = BoundedVector(aGoal->getPosition(), position);
 			//handleNotificationsFor( astar);
-			path = astar.search(position, aGoal->getPosition(), size);
+			path = astar.search(position, aGoal->getPosition(), size,
+				this == RobotWorld::getRobotWorld().getLocalRobot().get(),
+				ignoreRobot
+			);
 			//stopHandlingNotificationsFor( astar);
 
 			Application::Logger::setDisable(false);
@@ -626,14 +642,14 @@ namespace Model
 		        this == RobotWorld::getRobotWorld().getLocalRobot().get() ?
 		                RobotWorld::getRobotWorld().getRobot("Peer") :
 		                RobotWorld::getRobotWorld().getLocalRobot();
-		int yAnder = andereRobot->position.y;
-		int xAnder = andereRobot->position.x;
-		int xThis = position.x;
-		int yThis = position.y;
-		int ratio = 50;
+		int dX = position.x - andereRobot->position.x;
+		int dY = position.y - andereRobot->position.y;
+		double dist = std::sqrt( std::pow(dX, 2) + std::pow(dY, 2) );
+		double robotSize = std::max(size.GetWidth(), size.GetHeight()) * 3;
 
-		return (xAnder >= xThis - ratio && xAnder <= xThis + ratio)
-		        || (yAnder >= yThis - ratio && yAnder <= yThis + ratio);
+		bool result = dist < robotSize;
+
+		return result;
 	}
 
 	/**

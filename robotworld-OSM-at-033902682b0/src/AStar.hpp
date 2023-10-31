@@ -12,7 +12,6 @@
 #include <set>
 #include <vector>
 
-
 namespace PathAlgorithm
 {
 	/**
@@ -212,13 +211,15 @@ namespace PathAlgorithm
 			 */
 			Path search(const wxPoint& aStartPoint,
 						const wxPoint& aGoalPoint,
-						const wxSize& aRobotSize);
+						const wxSize& aRobotSize,
+						bool isLocal, bool ignoreRobot);
 			/**
 			 *
 			 */
 			Path search(Vertex aStart,
 						const Vertex& aGoal,
-						const wxSize& aRobotSize);
+						const wxSize& aRobotSize,
+						bool isLocal, bool ignoreRobot);
 			/**
 			 *
 			 */
