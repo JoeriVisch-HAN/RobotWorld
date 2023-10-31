@@ -71,7 +71,6 @@ namespace Application
 																logTextCtrl( nullptr),
 																logDestination( nullptr),
 																configPanel(nullptr),
-																drawOpenSetCheckbox(nullptr),
 																speedSpinCtrl(nullptr),
 																worldNumber(nullptr),
 																buttonPanel( nullptr)
@@ -329,7 +328,7 @@ namespace Application
 					wxGROW);
 		sizer->AddGrowableRow( 2);
 		sizer->AddGrowableCol( 1);
-		logTextCtrl->SetMinSize( wxSize( 500, 300));
+		logTextCtrl->SetMinSize( wxSize( 500, 250));
 
 		sizer->Add( makeButton( panel,
 								"Clear log window",
@@ -367,12 +366,7 @@ namespace Application
 					wxGROW);
 		sizer->AddGrowableCol( 0);
 
-		sizer->Add( drawOpenSetCheckbox = Application::makeCheckbox( panel,
-																	 "Draw OpenSet",
-																	 [this]( wxCommandEvent& event){this-> OnDrawOpenSet(event);}),
-					wxGBPosition( 1, 1),
-					wxGBSpan( 1, 1),
-					wxSHRINK | wxALIGN_CENTRE);
+
 
 		/////// Speed
 		sizer->Add(new wxStaticText(panel,
@@ -389,11 +383,15 @@ namespace Application
 		speedSpinCtrl->SetValue(static_cast<int>(10));
 		speedSpinCtrl->Bind(wxEVT_COMMAND_SPINCTRL_UPDATED,[this](wxCommandEvent& event){this->OnSpeedSpinCtrlUpdate(event);});
 
-		std::array<std::string,3> choicesArray
+		std::array<std::string,6> choicesArray
 		{
-			"1 Default world",
-			"2 Student world 1",
-			"3 Student world 2"
+			"Situatie 1 A",
+			"Situatie 1 B",
+			"Situatie 2 A",
+			"Situatie 2 B",
+			"Situatie 3 A",
+			"Situatie 3 B"
+
 		};
 
 		sizer->Add(	worldNumber = makeRadiobox(	panel,
@@ -420,6 +418,22 @@ namespace Application
 																OnWorld3(event);
 																break;
 															}
+															case 3:
+															{
+																OnWorld4(event);
+																break;
+															}
+															case 4:
+															{
+																OnWorld5(event);
+																break;
+															}
+															case 5:
+															{
+																OnWorld6(event);
+																break;
+															}
+
 															default:
 															{
 																TRACE_DEVELOP("Unknown world selection");
@@ -444,7 +458,6 @@ namespace Application
 		panel->SetSizerAndFit( sizer);
 
 		MainSettings& mainSettings = MainApplication::getSettings();
-		drawOpenSetCheckbox->SetValue(mainSettings.getDrawOpenSet());
 		speedSpinCtrl->SetValue(static_cast<int>(mainSettings.getSpeed()));
 		worldNumber->SetSelection(static_cast<int>(mainSettings.getWorldNumber()));
 
@@ -588,26 +601,7 @@ namespace Application
 	{
 		wxMessageBox( "ESD 2012-present RobotWorld.\n", "About RobotWorld", wxOK | wxICON_INFORMATION, this);
 	}
-	/**
-	 *
-	 */
-	void MainFrameWindow::OnDrawOpenSet( wxCommandEvent& UNUSEDPARAM(anEvent))
-	{
-//		Model::RobotPtr robot = Model::RobotWorld::getRobotWorld().getRobot( "Robot");
-//		if (robot)
-//		{
-//			robotWorldCanvas->selectShapeAt(robot->getPosition());
-//
-//			if(std::shared_ptr<View::RobotShape> robotShape = std::dynamic_pointer_cast<View::RobotShape>(robotWorldCanvas->getSelectedShape()))
-//			{
-//				robotShape->drawOpenSet( drawOpenSetCheckbox->IsChecked());
-//			}
-//			robotWorldCanvas->Refresh();
-//		}
-//
-		MainSettings& mainSettings = MainApplication::getSettings();
-		mainSettings.setDrawOpenSet(drawOpenSetCheckbox->IsChecked());
-	}
+
 	/**
 	 *
 	 */
@@ -653,6 +647,36 @@ namespace Application
 		MainSettings& mainSettings = MainApplication::getSettings();
 		mainSettings.setWorldNumber(worldNumber->GetSelection());
 	}
+	/**
+	 *
+	 */
+	void MainFrameWindow::OnWorld4( wxCommandEvent& anEvent)
+		{
+			TRACE_DEVELOP(anEvent.GetString().ToStdString());
+
+			MainSettings& mainSettings = MainApplication::getSettings();
+			mainSettings.setWorldNumber(worldNumber->GetSelection());
+		}
+	/**
+	 *
+	 */
+	void MainFrameWindow::OnWorld5( wxCommandEvent& anEvent)
+		{
+			TRACE_DEVELOP(anEvent.GetString().ToStdString());
+
+			MainSettings& mainSettings = MainApplication::getSettings();
+			mainSettings.setWorldNumber(worldNumber->GetSelection());
+		}
+	/**
+	 *
+	 */
+	void MainFrameWindow::OnWorld6( wxCommandEvent& anEvent)
+		{
+			TRACE_DEVELOP(anEvent.GetString().ToStdString());
+
+			MainSettings& mainSettings = MainApplication::getSettings();
+			mainSettings.setWorldNumber(worldNumber->GetSelection());
+		}
 	/**
 	 *
 	 */
