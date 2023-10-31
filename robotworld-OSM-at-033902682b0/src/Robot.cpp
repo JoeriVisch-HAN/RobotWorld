@@ -526,6 +526,22 @@ namespace Model
 		return os.str();
 	}
 
+	bool Robot::andereRobotInDeBuurt() const
+	{
+		RobotPtr andereRobot =
+				this == RobotWorld::getRobotWorld().getLocalRobot().get() ?
+						RobotWorld::getRobotWorld().getRobot("Peer") :
+						RobotWorld::getRobotWorld().getLocalRobot();
+		int dX = position.x - andereRobot->position.x;
+		int dY = position.y - andereRobot->position.y;
+		double dist = std::sqrt( std::pow(dX, 2) + std::pow(dY, 2) );
+		double robotSize = std::max(size.GetWidth(), size.GetHeight()) * 3;
+
+		bool result = dist < robotSize;
+
+		return result;
+	}
+
 	/**
 	 *
 	 */
@@ -533,6 +549,7 @@ namespace Model
 	{
 		try
 		{
+			TRACE_DEVELOP("Driving path with " + std::to_string(path.size()) + " vertexes.");
 			// The runtime value always wins!!
 			speed = static_cast<float>(Application::MainApplication::getSettings().getSpeed()) / 2.5f;
 
@@ -550,22 +567,21 @@ namespace Model
 			while (position.x > 0 && position.x < 500 && position.y > 0
 			        && position.y < 500 && pathPoint < path.size())    // @suppress("Avoid magic numbers")
 			{
-				// Do the update
-				const PathAlgorithm::Vertex& vertex = path[pathPoint +=
-						static_cast<unsigned int>(speed)];
-				front = BoundedVector(vertex.asPoint(), position);
-				position.x = vertex.x;
-				position.y = vertex.y;
-				if (andereRobotInDeBuurt() && this == RobotWorld::getRobotWorld().getRobot(0).get() && !alreadyCollided)
+				if (!andereRobotInDeBuurt() || this == RobotWorld::getRobotWorld().getRobot(0).get())
 				{
-					for (RobotPtr robot : RobotWorld::getRobotWorld().getRobots())
-					{
-						robot->calculateRoute(robot->goal, false);
-						robot->pathPoint = 10;
-						robot->alreadyCollided = true;
-					}
-
-					TRACE_DEVELOP("Recalculating route (new size: " + std::to_string(path.size()) + ")");
+					const PathAlgorithm::Vertex& vertex = path[pathPoint +=
+							static_cast<unsigned int>(speed)];
+					front = BoundedVector(vertex.asPoint(), position);
+					position.x = vertex.x;
+					position.y = vertex.y;
+				}
+				if (andereRobotInDeBuurt() && !alreadyCollided)
+				{
+					TRACE_DEVELOP("Recalculating route - " + name);
+					calculateRoute(goal, false);
+					TRACE_DEVELOP("Recalculated route (new size: " + std::to_string(path.size()) + ")");
+					pathPoint = 0;
+					alreadyCollided = true;
 				}
 
 				// Stop on arrival or collision
@@ -581,7 +597,7 @@ namespace Model
 				notifyObservers();
 
 				// If there is no sleep_for here the robot will immediately be on its destination....
-				std::this_thread::sleep_for(std::chrono::milliseconds(200));    // @suppress("Avoid magic numbers")
+				std::this_thread::sleep_for(std::chrono::milliseconds(100));    // @suppress("Avoid magic numbers")
 
 				// this should be the last thing in the loop
 				if (driving == false)
@@ -634,22 +650,6 @@ namespace Model
 			return true;
 		}
 		return false;
-	}
-
-	bool Robot::andereRobotInDeBuurt() const
-	{
-		RobotPtr andereRobot =
-		        this == RobotWorld::getRobotWorld().getLocalRobot().get() ?
-		                RobotWorld::getRobotWorld().getRobot("Peer") :
-		                RobotWorld::getRobotWorld().getLocalRobot();
-		int dX = position.x - andereRobot->position.x;
-		int dY = position.y - andereRobot->position.y;
-		double dist = std::sqrt( std::pow(dX, 2) + std::pow(dY, 2) );
-		double robotSize = std::max(size.GetWidth(), size.GetHeight()) * 3;
-
-		bool result = dist < robotSize;
-
-		return result;
 	}
 
 	/**

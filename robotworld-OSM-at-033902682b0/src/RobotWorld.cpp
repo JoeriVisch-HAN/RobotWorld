@@ -361,12 +361,22 @@ namespace Model
 				robotWorld.newGoal("YourGoal", wxPoint(40, 480), false);
 			}
 		}
+
+	void wallAroundTheWorld()
+	{
+		RobotWorld::getRobotWorld().newWall(wxPoint(0,0), wxPoint(0,500), false);
+		RobotWorld::getRobotWorld().newWall(wxPoint(0,0), wxPoint(500,0), false);
+		RobotWorld::getRobotWorld().newWall(wxPoint(500,0), wxPoint(500,500), false);
+		RobotWorld::getRobotWorld().newWall(wxPoint(0,500), wxPoint(500,500), false);
+	}
+
 	/**
 	 *
 	 */
 	void populateWorld4(bool fromRequest)
 		{
 			populateWorld0(fromRequest);
+			wallAroundTheWorld();
 			RobotWorld::getRobotWorld().newWall(wxPoint(480, 300), wxPoint(150, 300), false);
 		}
 	/**
