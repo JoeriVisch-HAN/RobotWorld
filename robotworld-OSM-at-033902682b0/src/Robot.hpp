@@ -162,10 +162,12 @@ namespace Model
 			 *
 			 */
 			void stopCommunicating();
+			void sendMessage(const Messaging::Message& message);
 			/**
 			 *
 			 */
 			wxRegion getRegion() const;
+			bool andereRobotInDeBuurt() const;
 			/**
 			 *
 			 */
@@ -260,7 +262,7 @@ namespace Model
 			/**
 			 *
 			 */
-			void calculateRoute( GoalPtr aGoal);
+			void calculateRoute( GoalPtr aGoal, bool ignoreRobot);
 			/**
 			 *
 			 */
@@ -326,6 +328,9 @@ namespace Model
 			 *
 			 */
 			Messaging::ServerPtr server;
+
+			unsigned int pathPoint;
+			bool alreadyCollided;
 	};
 } // namespace Model
 #endif // ROBOT_HPP_

@@ -15,12 +15,16 @@ namespace Messaging
 		ServerSideExceptionResponse,
 		ApplicationExceptionRequest,
 		ApplicationExceptionResponse,
-		StopCommunicatingRequest,
-		StopCommunicatingResponse,
 		GenericRequest,
 		GenericResponse,
 		EchoRequest,
-		EchoResponse
+		EchoResponse,
+		PopulateRequest,
+		PopulateResponse,
+		StartRequest,
+		StartResponse,
+		StopRequest,
+		StopResponse
 	};
 	//@}
 } /* namespace Messaging */

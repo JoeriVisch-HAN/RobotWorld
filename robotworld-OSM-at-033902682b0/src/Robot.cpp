@@ -30,22 +30,15 @@ namespace Model
 	/**
 	 *
 	 */
-	Robot::Robot( const std::string& aName) : Robot(aName, wxDefaultPosition)
+	Robot::Robot(const std::string& aName) : Robot(aName, wxDefaultPosition)
 	{
 	}
 	/**
 	 *
 	 */
-	Robot::Robot(	const std::string& aName,
-					const wxPoint& aPosition) :
-								name( aName),
-								size( wxDefaultSize),
-								position( aPosition),
-								front( 0, 0),
-								speed( 0.0),
-								acting(false),
-								driving(false),
-								communicating(false)
+	Robot::Robot(const std::string& aName, const wxPoint& aPosition) : name(
+	        aName), size(wxDefaultSize), position(aPosition), front(0, 0), speed(
+	        0.0), acting(false), driving(false), communicating(false), pathPoint(0), alreadyCollided(false)
 	{
 		// We use the real position for starters, not an estimated position.
 		startPosition = position;
@@ -55,15 +48,15 @@ namespace Model
 	 */
 	Robot::~Robot()
 	{
-		if(driving)
+		if (driving)
 		{
 			Robot::stopDriving();
 		}
-		if(acting)
+		if (acting)
 		{
 			Robot::stopActing();
 		}
-		if(communicating)
+		if (communicating)
 		{
 			stopCommunicating();
 		}
@@ -71,8 +64,8 @@ namespace Model
 	/**
 	 *
 	 */
-	void Robot::setName( const std::string& aName,
-						 bool aNotifyObservers /*= true*/)
+	void Robot::setName(const std::string& aName,
+	        bool aNotifyObservers /*= true*/)
 	{
 		name = aName;
 		if (aNotifyObservers == true)
@@ -90,8 +83,7 @@ namespace Model
 	/**
 	 *
 	 */
-	void Robot::setSize(	const wxSize& aSize,
-							bool aNotifyObservers /*= true*/)
+	void Robot::setSize(const wxSize& aSize, bool aNotifyObservers /*= true*/)
 	{
 		size = aSize;
 		if (aNotifyObservers == true)
@@ -102,8 +94,8 @@ namespace Model
 	/**
 	 *
 	 */
-	void Robot::setPosition(	const wxPoint& aPosition,
-								bool aNotifyObservers /*= true*/)
+	void Robot::setPosition(const wxPoint& aPosition,
+	        bool aNotifyObservers /*= true*/)
 	{
 		position = aPosition;
 		if (aNotifyObservers == true)
@@ -121,8 +113,8 @@ namespace Model
 	/**
 	 *
 	 */
-	void Robot::setFront(	const BoundedVector& aVector,
-							bool aNotifyObservers /*= true*/)
+	void Robot::setFront(const BoundedVector& aVector,
+	        bool aNotifyObservers /*= true*/)
 	{
 		front = aVector;
 		if (aNotifyObservers == true)
@@ -140,8 +132,7 @@ namespace Model
 	/**
 	 *
 	 */
-	void Robot::setSpeed( float aNewSpeed,
-						  bool aNotifyObservers /*= true*/)
+	void Robot::setSpeed(float aNewSpeed, bool aNotifyObservers /*= true*/)
 	{
 		speed = aNewSpeed;
 		if (aNotifyObservers == true)
@@ -155,8 +146,11 @@ namespace Model
 	void Robot::startActing()
 	{
 		acting = true;
-		std::thread newRobotThread( [this]{	startDriving();});
-		robotThread.swap( newRobotThread);
+		std::thread newRobotThread([this]
+		{
+			startDriving();
+		});
+		robotThread.swap(newRobotThread);
 	}
 	/**
 	 *
@@ -174,8 +168,14 @@ namespace Model
 	{
 		driving = true;
 
-		goal = RobotWorld::getRobotWorld().getGoal( "Goal");
-		calculateRoute(goal);
+		if (this == RobotWorld::getRobotWorld().getLocalRobot().get())
+		{
+			goal = RobotWorld::getRobotWorld().getGoal("YourGoal");
+		} else
+		{
+			goal = RobotWorld::getRobotWorld().getGoal("PeerGoal");
+		}
+		calculateRoute(goal, true);
 
 		drive();
 	}
@@ -191,64 +191,93 @@ namespace Model
 	 */
 	void Robot::startCommunicating()
 	{
-		if(!communicating)
+		if (communicating)
 		{
-			communicating = true;
-
-			std::string localPort = "12345";
-			if (Application::MainApplication::isArgGiven( "-local_port"))
-			{
-				localPort = Application::MainApplication::getArg( "-local_port").value;
-			}
-
-			if(Messaging::CommunicationService::getCommunicationService().isStopped())
-			{
-				TRACE_DEVELOP( "Restarting the Communication service");
-				Messaging::CommunicationService::getCommunicationService().restart();
-			}
-
-			server = std::make_shared<Messaging::Server>(	static_cast<unsigned short>(std::stoi(localPort)),
-															toPtr<Robot>());
-			Messaging::CommunicationService::getCommunicationService().registerServer( server);
+			return;
 		}
+
+		communicating = true;
+
+		std::string localPort = "12345";
+		if (Application::MainApplication::isArgGiven("-local_port"))
+		{
+			localPort =
+			        Application::MainApplication::getArg("-local_port").value;
+		}
+
+		if (Messaging::CommunicationService::getCommunicationService().isStopped())
+		{
+			Messaging::CommunicationService::getCommunicationService().restart();
+		}
+
+		server = std::make_shared<Messaging::Server>(
+		        static_cast<unsigned short>(std::stoi(localPort)),
+		        toPtr<Robot>());
+		Messaging::CommunicationService::getCommunicationService().registerServer(
+		        server);
+		TRACE_DEVELOP("Server registered. IP: localhost, Port: " + localPort);
 	}
 	/**
 	 *
 	 */
 	void Robot::stopCommunicating()
 	{
-		if(communicating)
+		if (!communicating)
 		{
-			communicating = false;
-
-			std::string localPort = "12345";
-			if (Application::MainApplication::isArgGiven( "-local_port"))
-			{
-				localPort = Application::MainApplication::getArg( "-local_port").value;
-			}
-
-			Messaging::Client c1ient( 	"localhost",
-										static_cast<unsigned short>(std::stoi(localPort)),
-										toPtr<Robot>());
-			Messaging::Message message( Messaging::StopCommunicatingRequest, "stop");
-			c1ient.dispatchMessage( message);
+			return;
 		}
+
+		communicating = false;
+
+		std::string localPort = "12345";
+		if (Application::MainApplication::isArgGiven("-local_port"))
+		{
+			localPort =
+			        Application::MainApplication::getArg("-local_port").value;
+		}
+
+		Messaging::CommunicationService::getCommunicationService().stopServer(
+		        static_cast<unsigned short>(std::stoi(localPort)), true);
+		TRACE_DEVELOP("Server shut down. IP: localhost, Port: " + localPort);
 	}
+	void Robot::sendMessage(const Messaging::Message& message)
+	{
+		std::string remoteIpAdres = "localhost";
+		std::string remotePort = "12345";
+
+		if (Application::MainApplication::isArgGiven("-remote_ip"))
+		{
+			remoteIpAdres =
+			        Application::MainApplication::getArg("-remote_ip").value;
+		}
+		if (Application::MainApplication::isArgGiven("-remote_port"))
+		{
+			remotePort =
+			        Application::MainApplication::getArg("-remote_port").value;
+		}
+
+		Messaging::Client c1ient(remoteIpAdres,
+		        static_cast<unsigned short>(std::stoi(remotePort)),
+		        toPtr<Robot>());
+		c1ient.dispatchMessage(message);
+	}
+	;
 	/**
 	 *
 	 */
 	wxRegion Robot::getRegion() const
 	{
-		wxPoint translatedPoints[] = { getFrontRight(), getFrontLeft(), getBackLeft(), getBackRight() };
-		return wxRegion( 4, translatedPoints); // @suppress("Avoid magic numbers")
+		wxPoint translatedPoints[] =
+		{getFrontRight(), getFrontLeft(), getBackLeft(), getBackRight()};
+		return wxRegion(4, translatedPoints);    // @suppress("Avoid magic numbers")
 	}
 	/**
 	 *
 	 */
-	bool Robot::intersects( const wxRegion& aRegion) const
+	bool Robot::intersects(const wxRegion& aRegion) const
 	{
 		wxRegion region = getRegion();
-		region.Intersect( aRegion);
+		region.Intersect(aRegion);
 		return !region.IsEmpty();
 	}
 	/**
@@ -260,11 +289,18 @@ namespace Model
 		int x = position.x - (size.x / 2);
 		int y = position.y - (size.y / 2);
 
-		wxPoint originalFrontLeft( x, y);
-		double angle = Utils::Shape2DUtils::getAngle( front) + 0.5 * Utils::PI;
+		wxPoint originalFrontLeft(x, y);
+		double angle = Utils::Shape2DUtils::getAngle(front) + 0.5 * Utils::PI;
 
-		wxPoint frontLeft( static_cast<int>((originalFrontLeft.x - position.x) * std::cos( angle) - (originalFrontLeft.y - position.y) * std::sin( angle) + position.x),
-						 static_cast<int>((originalFrontLeft.y - position.y) * std::cos( angle) + (originalFrontLeft.x - position.x) * std::sin( angle) + position.y));
+		wxPoint frontLeft(
+		        static_cast<int>((originalFrontLeft.x - position.x)
+		                * std::cos(angle)
+		                - (originalFrontLeft.y - position.y) * std::sin(angle)
+		                + position.x),
+		        static_cast<int>((originalFrontLeft.y - position.y)
+		                * std::cos(angle)
+		                + (originalFrontLeft.x - position.x) * std::sin(angle)
+		                + position.y));
 
 		return frontLeft;
 	}
@@ -277,11 +313,18 @@ namespace Model
 		int x = position.x - (size.x / 2);
 		int y = position.y - (size.y / 2);
 
-		wxPoint originalFrontRight( x + size.x, y);
-		double angle = Utils::Shape2DUtils::getAngle( front) + 0.5 * Utils::PI;
+		wxPoint originalFrontRight(x + size.x, y);
+		double angle = Utils::Shape2DUtils::getAngle(front) + 0.5 * Utils::PI;
 
-		wxPoint frontRight( static_cast<int>((originalFrontRight.x - position.x) * std::cos( angle) - (originalFrontRight.y - position.y) * std::sin( angle) + position.x),
-						  static_cast<int>((originalFrontRight.y - position.y) * std::cos( angle) + (originalFrontRight.x - position.x) * std::sin( angle) + position.y));
+		wxPoint frontRight(
+		        static_cast<int>((originalFrontRight.x - position.x)
+		                * std::cos(angle)
+		                - (originalFrontRight.y - position.y) * std::sin(angle)
+		                + position.x),
+		        static_cast<int>((originalFrontRight.y - position.y)
+		                * std::cos(angle)
+		                + (originalFrontRight.x - position.x) * std::sin(angle)
+		                + position.y));
 
 		return frontRight;
 	}
@@ -294,12 +337,19 @@ namespace Model
 		int x = position.x - (size.x / 2);
 		int y = position.y - (size.y / 2);
 
-		wxPoint originalBackLeft( x, y + size.y);
+		wxPoint originalBackLeft(x, y + size.y);
 
-		double angle = Utils::Shape2DUtils::getAngle( front) + 0.5 * Utils::PI;
+		double angle = Utils::Shape2DUtils::getAngle(front) + 0.5 * Utils::PI;
 
-		wxPoint backLeft( static_cast<int>((originalBackLeft.x - position.x) * std::cos( angle) - (originalBackLeft.y - position.y) * std::sin( angle) + position.x),
-						static_cast<int>((originalBackLeft.y - position.y) * std::cos( angle) + (originalBackLeft.x - position.x) * std::sin( angle) + position.y));
+		wxPoint backLeft(
+		        static_cast<int>((originalBackLeft.x - position.x)
+		                * std::cos(angle)
+		                - (originalBackLeft.y - position.y) * std::sin(angle)
+		                + position.x),
+		        static_cast<int>((originalBackLeft.y - position.y)
+		                * std::cos(angle)
+		                + (originalBackLeft.x - position.x) * std::sin(angle)
+		                + position.y));
 
 		return backLeft;
 	}
@@ -312,12 +362,19 @@ namespace Model
 		int x = position.x - (size.x / 2);
 		int y = position.y - (size.y / 2);
 
-		wxPoint originalBackRight( x + size.x, y + size.y);
+		wxPoint originalBackRight(x + size.x, y + size.y);
 
-		double angle = Utils::Shape2DUtils::getAngle( front) + 0.5 * Utils::PI;
+		double angle = Utils::Shape2DUtils::getAngle(front) + 0.5 * Utils::PI;
 
-		wxPoint backRight( static_cast<int>((originalBackRight.x - position.x) * std::cos( angle) - (originalBackRight.y - position.y) * std::sin( angle) + position.x),
-						 static_cast<int>((originalBackRight.y - position.y) * std::cos( angle) + (originalBackRight.x - position.x) * std::sin( angle) + position.y));
+		wxPoint backRight(
+		        static_cast<int>((originalBackRight.x - position.x)
+		                * std::cos(angle)
+		                - (originalBackRight.y - position.y) * std::sin(angle)
+		                + position.x),
+		        static_cast<int>((originalBackRight.y - position.y)
+		                * std::cos(angle)
+		                + (originalBackRight.x - position.x) * std::sin(angle)
+		                + position.y));
 
 		return backRight;
 	}
@@ -329,41 +386,85 @@ namespace Model
 		//	std::unique_lock<std::recursive_mutex> lock(robotMutex);
 
 		static int update = 0;
-		if ((++update % 200) == 0) // @suppress("Avoid magic numbers")
+		if ((++update % 200) == 0)    // @suppress("Avoid magic numbers")
 		{
 			notifyObservers();
 		}
 	}
+
+	void handlePopulateRequest(Messaging::Message& aMessage)
+	{
+		int worldSelection = static_cast<signed int>(std::stoi(
+		        aMessage.getBody()));
+		RobotWorld::getRobotWorld().populate(worldSelection, true);
+		TRACE_DEVELOP("Spawned world " + worldSelection);
+		aMessage.setMessageType(Messaging::PopulateResponse);
+		aMessage.setBody("Messaging::PopulateResponse: " + aMessage.asString());
+	}
+
+	void handleStartRequest(Messaging::Message& aMessage)
+	{
+		Model::RobotWorld::getRobotWorld().reverseRobotVector();
+		for (Model::RobotPtr robot : Model::RobotWorld::getRobotWorld().getRobots())
+		{
+			if (!robot->isActing())
+			{
+				robot->startActing();
+			}
+		}
+		TRACE_DEVELOP("Started Robots");
+		aMessage.setMessageType(Messaging::StartResponse);
+		aMessage.setBody("Messaging::StartResponse");
+	}
+
+	void handleStopRequest(Messaging::Message& aMessage)
+	{
+		RobotPtr robot = RobotWorld::getRobotWorld().getRobot("Peer");
+		if (robot && robot->isActing())
+		{
+			robot->stopActing();
+			TRACE_DEVELOP("Stopped Peer Robot");
+		}
+		aMessage.setMessageType(Messaging::StopResponse);
+		aMessage.setBody("Messaging::StopResponse");
+	}
+
 	/**
 	 *
 	 */
-	void Robot::handleRequest( Messaging::Message& aMessage)
+	void Robot::handleRequest(Messaging::Message& aMessage)
 	{
 		FUNCTRACE_TEXT_DEVELOP(aMessage.asString());
 
-		switch(aMessage.getMessageType())
+		switch (aMessage.getMessageType())
 		{
-			case Messaging::StopCommunicatingRequest:
-			{
-				aMessage.setMessageType(Messaging::StopCommunicatingResponse);
-				aMessage.setBody("StopCommunicatingResponse");
-				// Handle the request. In the limited context of this works. I am not sure
-				// whether this works OK in a real application because the handling is time sensitive,
-				// i.e. 2 async timers are involved:
-				// see CommunicationService::stopServer and Server::stopHandlingRequests
-				Messaging::CommunicationService::getCommunicationService().stopServer(12345,true); // @suppress("Avoid magic numbers")
-
-				break;
-			}
 			case Messaging::EchoRequest:
 			{
 				aMessage.setMessageType(Messaging::EchoResponse);
-				aMessage.setBody( "Messaging::EchoResponse: " + aMessage.asString());
+				aMessage.setBody(
+				        "Messaging::EchoResponse: " + aMessage.asString());
+				break;
+			}
+			case Messaging::PopulateRequest:
+			{
+				handlePopulateRequest(aMessage);
+				break;
+			}
+			case Messaging::StartRequest:
+			{
+				handleStartRequest(aMessage);
+				break;
+			}
+			case Messaging::StopRequest:
+			{
+				handleStopRequest(aMessage);
 				break;
 			}
 			default:
 			{
-				TRACE_DEVELOP(__PRETTY_FUNCTION__ + std::string(": default not implemented"));
+				TRACE_DEVELOP(
+						__PRETTY_FUNCTION__
+						+ std::string(": default not implemented"));
 				break;
 			}
 		}
@@ -371,24 +472,30 @@ namespace Model
 	/**
 	 *
 	 */
-	void Robot::handleResponse( const Messaging::Message& aMessage)
+	void Robot::handleResponse(const Messaging::Message& aMessage)
 	{
 		FUNCTRACE_TEXT_DEVELOP(aMessage.asString());
 
-		switch(aMessage.getMessageType())
+		switch (aMessage.getMessageType())
 		{
-			case Messaging::StopCommunicatingResponse:
+			case Messaging::EchoResponse:
 			{
-				//Messaging::CommunicationService::getCommunicationService().stop();
 				break;
 			}
-			case Messaging::EchoResponse:
+			case Messaging::StartResponse:
+			{
+				break;
+			}
+			case Messaging::StopResponse:
 			{
 				break;
 			}
 			default:
 			{
-				TRACE_DEVELOP(__PRETTY_FUNCTION__ + std::string( ": default not implemented, ") + aMessage.asString());
+				TRACE_DEVELOP(
+						__PRETTY_FUNCTION__
+						+ std::string(": default not implemented, ")
+						+ aMessage.asString());
 				break;
 			}
 		}
@@ -400,7 +507,8 @@ namespace Model
 	{
 		std::ostringstream os;
 
-		os << "Robot " << name << " at (" << position.x << "," << position.y << ")";
+		os << "Robot " << name << " at (" << position.x << "," << position.y
+		        << ")";
 
 		return os.str();
 	}
@@ -412,10 +520,12 @@ namespace Model
 		std::ostringstream os;
 
 		os << "Robot:\n";
-		os << "Robot " << name << " at (" << position.x << "," << position.y << ")\n";
+		os << "Robot " << name << " at (" << position.x << "," << position.y
+		        << ")\n";
 
 		return os.str();
 	}
+
 	/**
 	 *
 	 */
@@ -424,60 +534,78 @@ namespace Model
 		try
 		{
 			// The runtime value always wins!!
-			speed = static_cast<float>(Application::MainApplication::getSettings().getSpeed());
+			speed = static_cast<float>(Application::MainApplication::getSettings().getSpeed()) / 2.5f;
 
 			// Compare a float/double with another float/double: use epsilon...
 			if (std::fabs(speed - 0.0) <= std::numeric_limits<float>::epsilon())
 			{
-				setSpeed(10.0, false); // @suppress("Avoid magic numbers")
+				setSpeed(2, false);    // @suppress("Avoid magic numbers")
 			}
 
 			// We use the real position for starters, not an estimated position.
 			startPosition = position;
 
-			unsigned pathPoint = 0;
-			while (position.x > 0 && position.x < 500 && position.y > 0 && position.y < 500 && pathPoint < path.size()) // @suppress("Avoid magic numbers")
+			alreadyCollided = false;
+			pathPoint = 0;
+			while (position.x > 0 && position.x < 500 && position.y > 0
+			        && position.y < 500 && pathPoint < path.size())    // @suppress("Avoid magic numbers")
 			{
 				// Do the update
-				const PathAlgorithm::Vertex& vertex = path[pathPoint+=static_cast<unsigned int>(speed)];
-				front = BoundedVector( vertex.asPoint(), position);
+				const PathAlgorithm::Vertex& vertex = path[pathPoint +=
+						static_cast<unsigned int>(speed)];
+				front = BoundedVector(vertex.asPoint(), position);
 				position.x = vertex.x;
 				position.y = vertex.y;
+				if (andereRobotInDeBuurt() && this == RobotWorld::getRobotWorld().getRobot(0).get() && !alreadyCollided)
+				{
+					for (RobotPtr robot : RobotWorld::getRobotWorld().getRobots())
+					{
+						robot->calculateRoute(robot->goal, false);
+						robot->pathPoint = 10;
+						robot->alreadyCollided = true;
+					}
+
+					TRACE_DEVELOP("Recalculating route (new size: " + std::to_string(path.size()) + ")");
+				}
 
 				// Stop on arrival or collision
 				if (arrived(goal) || collision())
 				{
-					Application::Logger::log(__PRETTY_FUNCTION__ + std::string(": arrived or collision"));
+					Application::Logger::log(
+					        __PRETTY_FUNCTION__
+					                + std::string(": arrived or collision"));
 					driving = false;
+					stopActing();
 				}
 
 				notifyObservers();
 
 				// If there is no sleep_for here the robot will immediately be on its destination....
-				std::this_thread::sleep_for( std::chrono::milliseconds( 100)); // @suppress("Avoid magic numbers")
+				std::this_thread::sleep_for(std::chrono::milliseconds(200));    // @suppress("Avoid magic numbers")
 
 				// this should be the last thing in the loop
-				if(driving == false)
+				if (driving == false)
 				{
 					break;
 				}
-			} // while
-		}
-		catch (std::exception& e)
+			}    // while
+		} catch(std::exception& e)
 		{
-			Application::Logger::log( __PRETTY_FUNCTION__ + std::string(": ") + e.what());
+			Application::Logger::log(
+			        __PRETTY_FUNCTION__ + std::string(": ") + e.what());
 			std::cerr << __PRETTY_FUNCTION__ << ": " << e.what() << std::endl;
-		}
-		catch (...)
+		} catch(...)
 		{
-			Application::Logger::log( __PRETTY_FUNCTION__ + std::string(": unknown exception"));
-			std::cerr << __PRETTY_FUNCTION__ << ": unknown exception" << std::endl;
+			Application::Logger::log(
+			        __PRETTY_FUNCTION__ + std::string(": unknown exception"));
+			std::cerr << __PRETTY_FUNCTION__ << ": unknown exception"
+			        << std::endl;
 		}
 	}
 	/**
 	 *
 	 */
-	void Robot::calculateRoute(GoalPtr aGoal)
+	void Robot::calculateRoute(GoalPtr aGoal, bool ignoreRobot)
 	{
 		path.clear();
 		if (aGoal)
@@ -485,12 +613,15 @@ namespace Model
 			// Turn off logging if not debugging AStar
 			Application::Logger::setDisable();
 
-			front = BoundedVector( aGoal->getPosition(), position);
+			front = BoundedVector(aGoal->getPosition(), position);
 			//handleNotificationsFor( astar);
-			path = astar.search( position, aGoal->getPosition(), size);
+			path = astar.search(position, aGoal->getPosition(), size,
+				this == RobotWorld::getRobotWorld().getLocalRobot().get(),
+				ignoreRobot
+			);
 			//stopHandlingNotificationsFor( astar);
 
-			Application::Logger::setDisable( false);
+			Application::Logger::setDisable(false);
 		}
 	}
 	/**
@@ -498,12 +629,29 @@ namespace Model
 	 */
 	bool Robot::arrived(GoalPtr aGoal)
 	{
-		if (aGoal && intersects( aGoal->getRegion()))
+		if (aGoal && intersects(aGoal->getRegion()))
 		{
 			return true;
 		}
 		return false;
 	}
+
+	bool Robot::andereRobotInDeBuurt() const
+	{
+		RobotPtr andereRobot =
+		        this == RobotWorld::getRobotWorld().getLocalRobot().get() ?
+		                RobotWorld::getRobotWorld().getRobot("Peer") :
+		                RobotWorld::getRobotWorld().getLocalRobot();
+		int dX = position.x - andereRobot->position.x;
+		int dY = position.y - andereRobot->position.y;
+		double dist = std::sqrt( std::pow(dX, 2) + std::pow(dY, 2) );
+		double robotSize = std::max(size.GetWidth(), size.GetHeight()) * 3;
+
+		bool result = dist < robotSize;
+
+		return result;
+	}
+
 	/**
 	 *
 	 */
@@ -514,24 +662,29 @@ namespace Model
 		wxPoint backLeft = getBackLeft();
 		wxPoint backRight = getBackRight();
 
-		const std::vector< WallPtr >& walls = RobotWorld::getRobotWorld().getWalls();
+		const std::vector<WallPtr>& walls =
+		        RobotWorld::getRobotWorld().getWalls();
 		for (WallPtr wall : walls)
 		{
-			if (Utils::Shape2DUtils::intersect( frontLeft, frontRight, wall->getPoint1(), wall->getPoint2()) 	||
-				Utils::Shape2DUtils::intersect( frontLeft, backLeft, wall->getPoint1(), wall->getPoint2())		||
-				Utils::Shape2DUtils::intersect( frontRight, backRight, wall->getPoint1(), wall->getPoint2()))
+			if (Utils::Shape2DUtils::intersect(frontLeft, frontRight,
+			        wall->getPoint1(), wall->getPoint2())
+			        || Utils::Shape2DUtils::intersect(frontLeft, backLeft,
+			                wall->getPoint1(), wall->getPoint2())
+			        || Utils::Shape2DUtils::intersect(frontRight, backRight,
+			                wall->getPoint1(), wall->getPoint2()))
 			{
 				return true;
 			}
 		}
-		const std::vector< RobotPtr >& robots = RobotWorld::getRobotWorld().getRobots();
+		const std::vector<RobotPtr>& robots =
+		        RobotWorld::getRobotWorld().getRobots();
 		for (RobotPtr robot : robots)
 		{
-			if ( getObjectId() == robot->getObjectId())
+			if (getObjectId() == robot->getObjectId())
 			{
 				continue;
 			}
-			if(intersects(robot->getRegion()))
+			if (intersects(robot->getRegion()))
 			{
 				return true;
 			}
@@ -539,4 +692,4 @@ namespace Model
 		return false;
 	}
 
-} // namespace Model
+}    // namespace Model

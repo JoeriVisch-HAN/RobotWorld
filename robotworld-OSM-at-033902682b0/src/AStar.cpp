@@ -3,6 +3,7 @@
 #include "RobotWorld.hpp"
 #include "Shape2DUtils.hpp"
 #include "Wall.hpp"
+#include "Robot.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -49,10 +50,12 @@ namespace PathAlgorithm
 		}
 	}
 	/**
-	 *
+	 * @returns A vector of vertexes that
 	 */
 	std::vector< Vertex > GetNeighbours(	const Vertex& aVertex,
-											int aFreeRadius /*= 1*/)
+											int aFreeRadius /*= 1*/,
+											const wxSize& aRobotSize,
+											bool isLocal, bool ignoreRobot)
 	{
 		static const int xOffset[] = { 0, 1, 1, 1, 0, -1, -1, -1 };
 		static const int yOffset[] = { 1, 1, 0, -1, -1, -1, 0, 1 };
@@ -73,6 +76,26 @@ namespace PathAlgorithm
 					break;
 				}
 			}
+			std::shared_ptr<Model::Robot> andereRobot = Model::RobotWorld::getRobotWorld().getRobot("Peer");
+			if (andereRobot && !ignoreRobot)
+			{
+				if (isLocal)
+				{
+					andereRobot = Model::RobotWorld::getRobotWorld().getRobot("Peer");
+				} else
+				{
+					andereRobot = Model::RobotWorld::getRobotWorld().getLocalRobot();
+				}
+				if (Utils::Shape2DUtils::isOnLine(
+						andereRobot->getPosition(),
+						andereRobot->getPosition() + wxPoint(1, 1),
+					vertex.asPoint(), aFreeRadius + std::max(aRobotSize.GetWidth(), aRobotSize.GetHeight()) * 1.33
+				))
+				{
+					addToNeigbours = false;
+					break;
+				}
+			}
 			if (addToNeigbours == true)
 			{
 				neighbours.push_back( vertex);
@@ -84,11 +107,13 @@ namespace PathAlgorithm
 	 *
 	 */
 	std::vector< Edge > GetNeighbourConnections(	const Vertex& aVertex,
-													int aFreeRadius /*= 1*/)
+													int aFreeRadius /*= 1*/,
+													const wxSize& aRobotSize,
+													bool isLocal, bool ignoreRobot)
 	{
 		std::vector< Edge > connections;
 
-		const std::vector< Vertex >& neighbours = GetNeighbours( aVertex, aFreeRadius);
+		const std::vector< Vertex >& neighbours = GetNeighbours( aVertex, aFreeRadius, aRobotSize, isLocal, ignoreRobot);
 		for (const Vertex& vertex : neighbours)
 		{
 			connections.push_back( Edge( aVertex, vertex));
@@ -101,12 +126,13 @@ namespace PathAlgorithm
 	 */
 	Path AStar::search(	const wxPoint& aStartPoint,
 						const wxPoint& aGoalPoint,
-						const wxSize& aRobotSize)
+						const wxSize& aRobotSize,
+						bool isLocal, bool ignoreRobot)
 	{
 		Vertex start( aStartPoint);
 		Vertex goal( aGoalPoint);
 
-		Path path = AStar::search( start, goal, aRobotSize);
+		Path path = AStar::search( start, goal, aRobotSize, isLocal, ignoreRobot);
 		return path;
 	}
 	/**
@@ -114,7 +140,8 @@ namespace PathAlgorithm
 	 */
 	Path AStar::search( Vertex aStart,
 						const Vertex& aGoal,
-						const wxSize& aRobotSize)
+						const wxSize& aRobotSize,
+						bool isLocal, bool ignoreRobot)
 	{
 		getOS().clear();
 		getCS().clear();
@@ -145,7 +172,7 @@ namespace PathAlgorithm
 				addToClosedSet( current);
 
 				// Find all the outgoing connections for the current Vertex
-				const std::vector< Edge >& connections = GetNeighbourConnections( current, radius);
+				const std::vector< Edge >& connections = GetNeighbourConnections( current, radius, aRobotSize, isLocal, ignoreRobot);
 
 				for (const Edge& connection : connections)
 				{

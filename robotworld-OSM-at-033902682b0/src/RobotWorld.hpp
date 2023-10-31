@@ -87,6 +87,8 @@ namespace Model
 			 *
 			 */
 			RobotPtr getRobot( const Base::ObjectId& anObjectId) const;
+
+			RobotPtr getRobot(int index) const;
 			/**
 			 *
 			 */
@@ -126,7 +128,7 @@ namespace Model
 			/**
 			 *
 			 */
-			void populate( int aNumberOfWalls = 2);
+			void populate(int worldNumber, bool fromRequest);
 			/**
 			 *
 			 */
@@ -156,11 +158,15 @@ namespace Model
 			virtual std::string asDebugString() const override;
 			//@}
 
+			RobotPtr getLocalRobot();
+
+			void reverseRobotVector();
+
 		protected:
 			/**
 			 *
 			 */
-			RobotWorld() = default;
+			RobotWorld();
 			/**
 			 *
 			 */
@@ -174,6 +180,8 @@ namespace Model
 			mutable std::vector< WayPointPtr > wayPoints;
 			mutable std::vector< GoalPtr > goals;
 			mutable std::vector< WallPtr > walls;
+
+			RobotPtr localRobot;
 	};
 } // namespace Model
 #endif // ROBOTWORLD_HPP_

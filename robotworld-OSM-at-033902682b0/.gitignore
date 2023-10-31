@@ -7,3 +7,5 @@
 /docs/generated
 /configure~
 /RobotWorld.cppcheck
+/mingw/
+/m4

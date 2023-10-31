@@ -11,6 +11,7 @@
 #include "Trace.hpp"
 
 #include <cmath>
+#include <sstream>
 
 namespace View
 {

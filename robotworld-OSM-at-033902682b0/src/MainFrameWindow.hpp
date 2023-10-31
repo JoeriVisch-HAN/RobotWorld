@@ -4,6 +4,7 @@
 #include "Config.hpp"
 
 #include "Widgets.hpp"
+#include "Message.hpp"
 
 namespace Base
 {
@@ -91,6 +92,8 @@ namespace Application
 			wxRadioBox* worldNumber;
 
 			wxPanel* buttonPanel;
+
+			void sendMessage(const Messaging::Message& message);
 
 			void OnQuit( wxCommandEvent& anEvent);
 			void OnWidgetTraceFunction( wxCommandEvent& anEvent);
